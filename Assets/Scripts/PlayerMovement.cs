@@ -6,6 +6,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float jumpForce = 0.4f;
     [SerializeField] private float movementSpeed = 5f;
     [SerializeField] private Transform cam;
+    private bool isDash = false;
 
     private bool isGrounded = false;
 
@@ -17,6 +18,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        Debug.Log($"Grounded: {isGrounded}");
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
