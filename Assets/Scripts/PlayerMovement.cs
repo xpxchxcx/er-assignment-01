@@ -3,22 +3,33 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     Rigidbody rb;
+
+    [Header("Movement Settings")]
     [SerializeField] private float jumpForce = 0.4f;
     [SerializeField] private float movementSpeed = 5f;
+
+    [Header("Camera Reference")]
     [SerializeField] private Transform cam;
-    private bool isDash = false;
+
+    [Header("Ground Check Settings")]
+    [SerializeField] private Vector3 boxCastSize = new Vector3(0.5f, 0.1f, 0.5f); // half extents of box
+    [SerializeField] private float groundCheckDistance = 0.2f; // how far below to check
+    [SerializeField] private LayerMask groundMask; // assign "Ground" layer in Inspector
 
     private bool isGrounded = false;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true; // so physics doesn’t spin the body
+        rb.freezeRotation = true;
     }
 
     void Update()
     {
+        GroundCheck();
+
         Debug.Log($"Grounded: {isGrounded}");
+
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
 
@@ -29,25 +40,30 @@ public class PlayerMovement : MonoBehaviour
         // movement vector
         Vector3 moveDir = (forward * v + right * h).normalized;
 
-        // set velocity (X/Z only, preserve Y for jump/gravity)
+        // set velocity (X/Z only)
         Vector3 targetVelocity = moveDir * movementSpeed;
         rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
 
-        // jumping
+        // jump
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z); // reset Y
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
     }
 
-    void OnCollisionEnter(Collision collision)
+    private void GroundCheck()
     {
-        if (collision.gameObject.CompareTag("Ground")) isGrounded = true;
+        // start position slightly above player bottom
+        Vector3 origin = transform.position + Vector3.up * 0.1f;
+        isGrounded = Physics.BoxCast(origin, boxCastSize, Vector3.down, Quaternion.identity, groundCheckDistance, groundMask);
     }
 
-    void OnCollisionExit(Collision collision)
+    private void OnDrawGizmosSelected()
     {
-        if (collision.gameObject.CompareTag("Ground")) isGrounded = false;
+        Gizmos.color = isGrounded ? Color.green : Color.red;
+        Vector3 origin = transform.position + Vector3.up * 0.1f;
+        Gizmos.matrix = Matrix4x4.TRS(origin, Quaternion.identity, Vector3.one);
+        Gizmos.DrawWireCube(Vector3.down * groundCheckDistance, boxCastSize * 2);
     }
 }
